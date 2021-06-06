@@ -20,7 +20,7 @@
 #define MAX_EVENT_NUMBER 10000 //最大事件数
 #define TIMESLOT 5             //最小超时单位
 
-#define SYNLOG  //同步写日志
+#define SYNLOG //同步写日志
 //#define ASYNLOG //异步写日志
 
 //#define listenfdET //边缘触发非阻塞
@@ -105,7 +105,7 @@ int main(int argc, char *argv[])
 
     //创建数据库连接池
     connection_pool *connPool = connection_pool::GetInstance();
-    connPool->init("localhost", "root", "root", "qgydb", 3306, 8);
+    connPool->init("localhost", "lxb", "796413852Ll", "webdb", 3306, 8);
 
     //创建线程池
     threadpool<http_conn> *pool = NULL;
