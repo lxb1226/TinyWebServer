@@ -37,6 +37,7 @@ void sort_timer_lst::add_timer(util_timer *timer)
     }
     add_timer(timer, head);
 }
+
 void sort_timer_lst::adjust_timer(util_timer *timer)
 {
     if (!timer)
@@ -44,10 +45,12 @@ void sort_timer_lst::adjust_timer(util_timer *timer)
         return;
     }
     util_timer *tmp = timer->next;
+    // 如果timer是最后一个或者timer的过期时间小于下一个的过期时间，则退出
     if (!tmp || (timer->expire < tmp->expire))
     {
         return;
     }
+    // 如果要调整的是第一个
     if (timer == head)
     {
         head = head->next;
@@ -68,6 +71,7 @@ void sort_timer_lst::del_timer(util_timer *timer)
     {
         return;
     }
+    // 如果要删除的链表中只有一个元素，要重置head以及tail
     if ((timer == head) && (timer == tail))
     {
         delete timer;
@@ -93,6 +97,7 @@ void sort_timer_lst::del_timer(util_timer *timer)
     timer->next->prev = timer->prev;
     delete timer;
 }
+// 遍历链表，如果链表中的元素满足条件，那么则执行；同时删除表头
 void sort_timer_lst::tick()
 {
     if (!head)
@@ -136,6 +141,7 @@ void sort_timer_lst::add_timer(util_timer *timer, util_timer *lst_head)
         prev = tmp;
         tmp = tmp->next;
     }
+    // 到了最后一个
     if (!tmp)
     {
         prev->next = timer;

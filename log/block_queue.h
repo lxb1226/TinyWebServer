@@ -31,6 +31,7 @@ public:
         m_back = -1;
     }
 
+    // 清除队列中的所有元素，只需要将队头和队尾指针回到初始位即可
     void clear()
     {
         m_mutex.lock();
@@ -40,6 +41,7 @@ public:
         m_mutex.unlock();
     }
 
+    // 析取函数，需要把m_array给释放
     ~block_queue()
     {
         m_mutex.lock();
@@ -100,6 +102,7 @@ public:
         return true;
     }
 
+    // 返回队列中元素的个数
     int size() 
     {
         int tmp = 0;
@@ -111,6 +114,7 @@ public:
         return tmp;
     }
 
+    // 返回队列中可存储最多元素的个数
     int max_size()
     {
         int tmp = 0;
@@ -199,14 +203,16 @@ public:
     }
 
 private:
+    // 用来进行线程间的互斥操作
     locker m_mutex;
+    // 用来进行线程间的同步操作
     cond m_cond;
 
-    T *m_array;
-    int m_size;
-    int m_max_size;
-    int m_front;
-    int m_back;
+    T *m_array; // 数组
+    int m_size; // 实际大小
+    int m_max_size;     // 最大可存储大小
+    int m_front;      // 队头指针
+    int m_back;       // 队尾指针
 };
 
 #endif

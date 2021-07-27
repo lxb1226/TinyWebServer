@@ -3,9 +3,9 @@
 int main(int argc, char *argv[])
 {
     //需要修改的数据库信息,登录名,密码,库名
-    string user = "lxb";
+    string user = "heyjude";
     string passwd = "796413852Ll";
-    string databasename = "webdb";
+    string databasename = "mydb";
 
     //命令行解析
     Config config;

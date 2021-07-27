@@ -77,6 +77,7 @@ void WebServer::log_write()
     if (0 == m_close_log)
     {
         //初始化日志
+        // TODO:建立日志文件夹
         if (1 == m_log_write)
             Log::get_instance()->init("./ServerLog", m_close_log, 2000, 800000, 800);
         else
@@ -100,13 +101,14 @@ void WebServer::thread_pool()
     m_pool = new threadpool<http_conn>(m_actormodel, m_connPool, m_thread_num);
 }
 
+// 监听事件
 void WebServer::eventListen()
 {
     //网络编程基础步骤
     m_listenfd = socket(PF_INET, SOCK_STREAM, 0);
     assert(m_listenfd >= 0);
 
-    //优雅关闭连接
+    //优雅关闭连接 linger
     if (0 == m_OPT_LINGER)
     {
         struct linger tmp = {0, 1};
@@ -126,6 +128,7 @@ void WebServer::eventListen()
     address.sin_port = htons(m_port);
 
     int flag = 1;
+    // 设置地址重用
     setsockopt(m_listenfd, SOL_SOCKET, SO_REUSEADDR, &flag, sizeof(flag));
     ret = bind(m_listenfd, (struct sockaddr *)&address, sizeof(address));
     assert(ret >= 0);
@@ -139,18 +142,21 @@ void WebServer::eventListen()
     m_epollfd = epoll_create(5);
     assert(m_epollfd != -1);
 
+    // 将listenfd 添加到内核事件表
     utils.addfd(m_epollfd, m_listenfd, false, m_LISTENTrigmode);
     http_conn::m_epollfd = m_epollfd;
 
+    // 双向管道
     ret = socketpair(PF_UNIX, SOCK_STREAM, 0, m_pipefd);
     assert(ret != -1);
     utils.setnonblocking(m_pipefd[1]);
     utils.addfd(m_epollfd, m_pipefd[0], false, 0);
 
-    utils.addsig(SIGPIPE, SIG_IGN);
-    utils.addsig(SIGALRM, utils.sig_handler, false);
-    utils.addsig(SIGTERM, utils.sig_handler, false);
+    utils.addsig(SIGPIPE, SIG_IGN); // 忽略SIGPIPE信号
+    utils.addsig(SIGALRM, utils.sig_handler, false);    // 处理SIGALRM信号
+    utils.addsig(SIGTERM, utils.sig_handler, false);    // 处理SIGTERM信号
 
+    // 定时
     alarm(TIMESLOT);
 
     //工具类,信号和描述符基础操作
@@ -158,6 +164,7 @@ void WebServer::eventListen()
     Utils::u_epollfd = m_epollfd;
 }
 
+// 将connfd事件加入定时链表
 void WebServer::timer(int connfd, struct sockaddr_in client_address)
 {
     users[connfd].init(connfd, client_address, m_root, m_CONNTrigmode, m_close_log, m_user, m_passWord, m_databaseName);
@@ -186,9 +193,11 @@ void WebServer::adjust_timer(util_timer *timer)
     LOG_INFO("%s", "adjust timer once");
 }
 
+// 处理定时器
 void WebServer::deal_timer(util_timer *timer, int sockfd)
 {
     timer->cb_func(&users_timer[sockfd]);
+    // 处理完定时器之后，删除定时器
     if (timer)
     {
         utils.m_timer_lst.del_timer(timer);
@@ -197,12 +206,14 @@ void WebServer::deal_timer(util_timer *timer, int sockfd)
     LOG_INFO("close fd %d", users_timer[sockfd].sockfd);
 }
 
-bool WebServer::dealclinetdata()
+// 处理客户端数据
+bool WebServer::dealclientdata()
 {
     struct sockaddr_in client_address;
     socklen_t client_addrlength = sizeof(client_address);
     if (0 == m_LISTENTrigmode)
     {
+        // LT模式，这段代码会被重复触发
         int connfd = accept(m_listenfd, (struct sockaddr *)&client_address, &client_addrlength);
         if (connfd < 0)
         {
@@ -219,7 +230,8 @@ bool WebServer::dealclinetdata()
     }
 
     else
-    {
+    {   
+        // TODO:ET模式下这段代码不会被重复触发
         while (1)
         {
             int connfd = accept(m_listenfd, (struct sockaddr *)&client_address, &client_addrlength);
@@ -241,6 +253,7 @@ bool WebServer::dealclinetdata()
     return true;
 }
 
+// 处理信号
 bool WebServer::dealwithsignal(bool &timeout, bool &stop_server)
 {
     int ret = 0;
@@ -277,6 +290,7 @@ bool WebServer::dealwithsignal(bool &timeout, bool &stop_server)
     return true;
 }
 
+// 处理read事件
 void WebServer::dealwithread(int sockfd)
 {
     util_timer *timer = users_timer[sockfd].timer;
@@ -284,6 +298,7 @@ void WebServer::dealwithread(int sockfd)
     //reactor
     if (1 == m_actormodel)
     {
+        // ET 
         if (timer)
         {
             adjust_timer(timer);
@@ -292,6 +307,12 @@ void WebServer::dealwithread(int sockfd)
         //若监测到读事件，将该事件放入请求队列
         m_pool->append(users + sockfd, 0);
 
+        // TODO：这里逻辑是什么？？
+        // improv 以及 timer_flag 分别代表什么意思
+        /*
+        while循环
+        只有在improv以及timer_flag都为1时才进行处理
+        */
         while (true)
         {
             if (1 == users[sockfd].improv)
@@ -328,6 +349,7 @@ void WebServer::dealwithread(int sockfd)
     }
 }
 
+// 处理写事件
 void WebServer::dealwithwrite(int sockfd)
 {
     util_timer *timer = users_timer[sockfd].timer;
@@ -374,6 +396,7 @@ void WebServer::dealwithwrite(int sockfd)
     }
 }
 
+// 事件循环
 void WebServer::eventLoop()
 {
     bool timeout = false;
@@ -395,7 +418,7 @@ void WebServer::eventLoop()
             //处理新到的客户连接
             if (sockfd == m_listenfd)
             {
-                bool flag = dealclinetdata();
+                bool flag = dealclientdata();
                 if (false == flag)
                     continue;
             }

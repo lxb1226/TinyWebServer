@@ -83,6 +83,7 @@ void removefd(int epollfd, int fd)
 //将事件重置为EPOLLONESHOT
 void modfd(int epollfd, int fd, int ev, int TRIGMode)
 {
+    // TODO：ev代表啥
     epoll_event event;
     event.data.fd = fd;
 
@@ -139,6 +140,7 @@ void http_conn::init()
     bytes_to_send = 0;
     bytes_have_send = 0;
     m_check_state = CHECK_STATE_REQUESTLINE;
+    
     m_linger = false;
     m_method = GET;
     m_url = 0;
@@ -151,7 +153,9 @@ void http_conn::init()
     m_write_idx = 0;
     cgi = 0;
     m_state = 0;
+    // 什么意思
     timer_flag = 0;
+    // 什么意思，优先级？
     improv = 0;
 
     memset(m_read_buf, '\0', READ_BUFFER_SIZE);

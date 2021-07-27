@@ -27,7 +27,7 @@ public:
     //可选择的参数有日志文件、日志缓冲区大小、最大行数以及最长日志条队列
     bool init(const char *file_name, int close_log, int log_buf_size = 8192, int split_lines = 5000000, int max_queue_size = 0);
 
-    void write_log(int level, const char *format, ...);
+    void write_log(int level, const char *format, ...); 
 
     void flush(void);
 
@@ -41,6 +41,11 @@ private:
         while (m_log_queue->pop(single_log))
         {
             m_mutex.lock();
+            /*
+            int fputs(const char *s, FILE *stream);
+            s 代表要输出的字符串的首地址，可以是字符数组名或字符指针变量名。
+            stream 表示向何种流中输出，可以是标准输出流 stdout，也可以是文件流。标准输出流即屏幕输出，printf 其实也是向标准输出流中输出的。
+            */
             fputs(single_log.c_str(), m_fp);
             m_mutex.unlock();
         }
