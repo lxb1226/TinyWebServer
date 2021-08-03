@@ -211,6 +211,8 @@ bool WebServer::dealclientdata()
 {
     struct sockaddr_in client_address;
     socklen_t client_addrlength = sizeof(client_address);
+
+
     if (0 == m_LISTENTrigmode)
     {
         // LT模式，这段代码会被重复触发
